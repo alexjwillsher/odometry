@@ -22,7 +22,7 @@ Group P: Arthur Thirion, Alexander Timms, Alexander Willsher, Andrew Mulligan, E
 #define ENC1            0x02                                  // Motor encoder 1 byte
 #define ENC2            0x06                                  // Motor encoder 2 byte
 #define ACCEL           0x0E                                  // Motor acceleration byte
-#define CMD             0x10                                  // Encoder value reset byte
+#define CMD             0x10                                  // Command byte (Used for reset)
 #define MODE            0x0F                                  // Control mode switch byte
 
 int speed = 0;                                                // Combined speed
@@ -67,10 +67,10 @@ void setup(){
 */
 // Function to reset encoder values
 void encoderValuesReset(){
-    Wire.beginTransmission(MD25);
-    Wire.write(CMD);
-    Wire.write(0x20);
-    Wire.endTransmission();
+    Wire.beginTransmission(MD25);                             // Begin communication with MD25
+    Wire.write(CMD);                                          // Write to Command
+    Wire.write(0x20);                                         // Reset encoder registers to zero
+    Wire.endTransmission();                                   // Send command, stop communication
     delay(30);
 }
 
@@ -81,33 +81,33 @@ float encoder1(){
     Wire.endTransmission();
 
     Wire.requestFrom(MD25, 4); 	                              // Request 4 bytes from MD25
-    while(Wire.available() < 4); 	                          // Wait for 4 bytes to arrive
-    long poss1 = Wire.read(); 	                              // First byte for encoder 1, HH.
+    while(Wire.available() < 4);                              // Wait for 4 bytes to arrive
+    long poss1 = Wire.read();                                 // First byte for encoder 1, HH.
     poss1 <<= 8;
-    poss1 += Wire.read(); 		                              // Second byte for encoder 1, HL
+    poss1 += Wire.read();                                     // Second byte for encoder 1, HL
     poss1 <<= 8;
-    poss1 += Wire.read(); 		                              // Third byte for encoder 1, LH
+    poss1 += Wire.read();                                     // Third byte for encoder 1, LH
     poss1 <<= 8;
-    poss1 +=Wire.read();		                              // Final byte
+    poss1 +=Wire.read();                                      // Final byte
 
     return(poss1);
 }
 
-// Function to read and display value of encoder 1 as a float
+// Function to read and display value of encoder 2 as a float
 float encoder2(){
     Wire.beginTransmission(MD25);                             // MD25 address
     Wire.write(ENC2);                                         // Read the position of encoder 1
     Wire.endTransmission();
 
     Wire.requestFrom(MD25, 4); 	                              // Request 4 bytes from MD25
-    while(Wire.available() < 4); 	                          // Wait for 4 bytes to arrive
-    long poss1 = Wire.read(); 	                              // First byte for encoder 1, HH.
+    while(Wire.available() < 4);                              // Wait for 4 bytes to arrive
+    long poss1 = Wire.read();                                 // First byte for encoder 1, HH.
     poss1 <<= 8;
-    poss1 += Wire.read(); 		                              // Second byte for encoder 1, HL
+    poss1 += Wire.read();                                     // Second byte for encoder 1, HL
     poss1 <<= 8;
-    poss1 += Wire.read(); 		                              // Third byte for encoder 1, LH
+    poss1 += Wire.read();                                     // Third byte for encoder 1, LH
     poss1 <<= 8;
-    poss1 +=Wire.read();		                              // Final byte
+    poss1 +=Wire.read();                                      // Final byte
 
     return(poss1);
 }
