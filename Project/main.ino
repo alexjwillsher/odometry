@@ -46,7 +46,7 @@ int cpos = 0;                                                 // Declare initial
 void setup(){
     pinMode(ledPin, OUTPUT);                                  // Sets LED pin mode to OUTPUT
     dropServo.attach(servoPin);                               // Attach servo to servo pin
-    dropServo.write(0);
+    resetServo();                                             // Reset servo to 0 position
 
     Wire.begin();                                             // Begin I2C bus
     Serial.begin();                                           // Begin serial monitoring for debug
@@ -86,7 +86,9 @@ void dispense(){
     cpos = pos;                                               // Set current position to servo position
 }
 
+// Function to reset servo to zero position
 void resetServo(){
+    cpos = servo.read();                                      // Get current servo position
     for (pos = cpos; pos > 0; pos -=1){
         myservo.write(pos);
         delay(15);
@@ -110,8 +112,8 @@ float encoder1(){
     poss1 += Wire.read();                                     // Third byte for encoder 1, LH
     poss1 <<= 8;
     poss1 +=Wire.read();                                      // Final byte
-
-    return(poss1);
+    poss1_mm = poss1*0.093;                                   // Convert to mm
+    return(poss1_mm);
 }
 
 // Function to read and display value of encoder 2 as a float
@@ -129,8 +131,45 @@ float encoder2(){
     poss1 += Wire.read();                                     // Third byte for encoder 1, LH
     poss1 <<= 8;
     poss1 +=Wire.read();                                      // Final byte
-
-    return(poss1);
+    poss1_mm = poss1*0.093;                                   // Convert to mm
+    return(poss1_mm);
 }
 
+// Function to light an LED when a step has been completed
+void ledNotify(){
+    digitalWrite(ledPin, HIGH);
+    delay(20);
+    digitalWrite(ledPin, LOW);
+}
 
+// Function to move the robot forward by the amount x at speed speed
+void moveForward(float x, int speed){
+    do {
+        Wire.beginTransmission(MD25);
+        Wire.write(SPEED);
+        Wire.write(speed);
+        Wire.endTransmission();
+    }while(encoder1() < x);
+    stopMotors();
+
+}
+
+// Function to stop motors and check for overshoot
+void stopMotors(){
+    do{
+        d1 = encoder1();
+        delay(50);
+        d2 = encoder1();
+        Wire.beginTransmission(MD25);
+        Wire.write(SPEED);
+        Wire.write(128);
+        Wire.endTransmission();
+    }while(d1 != d2);
+
+}
+
+void loop(){
+    moveForward(100);
+    dispense();
+    ledNotify();
+}
