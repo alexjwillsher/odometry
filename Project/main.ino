@@ -35,6 +35,7 @@ float w1Distance = 0;                                         // Wheel 1 distanc
 float w2Distance = 0;                                         // Wheel 2 distance [mm]
 
 Servo dropServo;                                              // Define servo
+int cpos = 0;                                                 // Declare initial (current) servo position
 
 /*
 ------------------------------------------------------------------------------------------------------------------------
@@ -74,6 +75,26 @@ void encoderValuesReset(){
     delay(30);
 }
 
+//Function to turn servo by 30 degrees and dispense M&M
+void dispense(){
+    int npos = cpos + 30;                                     // Declare the target position
+    int pos = cpos;                                           // Declare the current position
+    for (pos = cpos; pos <= npos; pos +=1){
+        myservo.write(pos);
+        delay(15);
+    }
+    cpos = pos;                                               // Set current position to servo position
+}
+
+void resetServo(){
+    for (pos = cpos; pos > 0; pos -=1){
+        myservo.write(pos);
+        delay(15);
+    }
+    cpos = pos;
+}
+
+
 // Function to read and display value of encoder 1 as a float
 float encoder1(){
     Wire.beginTransmission(MD25);                             // MD25 address
@@ -111,3 +132,5 @@ float encoder2(){
 
     return(poss1);
 }
+
+
