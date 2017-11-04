@@ -31,8 +31,8 @@ const int mode = 2;                                           // Motor mode 2 - 
 const int ledPin = 7;                                         // LED Signal pin
 const int servoPin = 9;                                       // Drop servo pin
 
-float w1Distance = 0;                                         // Wheel 1 distance [mm]
-float w2Distance = 0;                                         // Wheel 2 distance [mm]
+float d1 = 0;
+float d2 = 1;
 
 Servo dropServo;                                              // Define servo
 int cpos = 0;                                                 // Declare initial (current) servo position
@@ -167,7 +167,11 @@ void stopMotors(){
     }while(d1 != d2);
 
 }
-
+/*
+------------------------------------------------------------------------------------------------------------------------
+ Arduino will run this after setup.
+------------------------------------------------------------------------------------------------------------------------
+*/
 void loop(){
     moveForward(100);
     dispense();
