@@ -78,9 +78,8 @@ void encoderValuesReset(){
 //Function to turn servo by 30 degrees and dispense M&M
 void dispense(){
     int npos = cpos + 30;                                     // Declare the target position
-    int pos = cpos;                                           // Declare the current position
-    for (pos = cpos; pos <= npos; pos +=1){
-        myservo.write(pos);
+    for (int pos = cpos; pos <= npos; pos +=1){
+        dropServo.write(pos);
         delay(15);
     }
     cpos = pos;                                               // Set current position to servo position
@@ -88,9 +87,9 @@ void dispense(){
 
 // Function to reset servo to zero position
 void resetServo(){
-    cpos = servo.read();                                      // Get current servo position
-    for (pos = cpos; pos > 0; pos -=1){
-        myservo.write(pos);
+    cpos = dropServo.read();                                      // Get current servo position
+    for (int pos = cpos; pos > 0; pos -=1){
+        dropServo.write(pos);
         delay(15);
     }
     cpos = pos;
@@ -154,7 +153,7 @@ void moveForward(float x, int speed){
 
 }
 
-// Function to stop motors and check for overshoot
+// Function to stop motors
 void stopMotors(){
     do{
         d1 = encoder1();
@@ -173,7 +172,7 @@ void stopMotors(){
 ------------------------------------------------------------------------------------------------------------------------
 */
 void loop(){
-    moveForward(100);
+    moveForward(100, 200);
     dispense();
     ledNotify();
 }
