@@ -19,23 +19,26 @@ Group P: Arthur Thirion, Alexander Timms, Alexander Willsher, Andrew Mulligan, E
 
 #define MD25            0x58                                  // MD25 Address
 #define SPEED           0x00                                  // Motor speed byte
+#define TURN            0x01                                  // Motor Turn byte (speed2)
 #define ENC1            0x02                                  // Motor encoder 1 byte
 #define ENC2            0x06                                  // Motor encoder 2 byte
 #define ACCEL           0x0E                                  // Motor acceleration byte
 #define CMD             0x10                                  // Command byte (Used for reset)
 #define MODE            0x0F                                  // Control mode switch byte
 
-int speed = 0;                                                // Combined speed
-
-const int mode = 2;                                           // Motor mode 2 - [Reverse] 0 <-> 128 <-> 255 [Forward]
-const int ledPin = 7;                                         // LED Signal pin
+const int ledPin = 13;                                         // LED Signal pin
+const int piezoPin = 10;                                      // Piezo pin
 const int servoPin = 9;                                       // Drop servo pin
+
+const float robotWidth = 28.0;
+const float pi = 3.14159265359;
 
 float d1 = 0;
 float d2 = 1;
 
 Servo dropServo;                                              // Define servo
 int cpos = 0;                                                 // Declare initial (current) servo position
+int pos = 0;                                                  // Initilize servo position variable
 
 /*
 ------------------------------------------------------------------------------------------------------------------------
@@ -45,19 +48,14 @@ int cpos = 0;                                                 // Declare initial
 
 void setup(){
     pinMode(ledPin, OUTPUT);                                  // Sets LED pin mode to OUTPUT
+    digitalWrite(ledPin, LOW);
+    noTone(piezoPin);
     dropServo.attach(servoPin);                               // Attach servo to servo pin
     resetServo();                                             // Reset servo to 0 position
 
     Wire.begin();                                             // Begin I2C bus
-    Serial.begin();                                           // Begin serial monitoring for debug
-
-    Wire.beginTransmission(MD25);                             // Begin communication with MD25
-    Wire.write(MODE);                                         // Write to mode switch
-    Wire.write(mode);                                         // Write mode
-    Wire.endTransmission();                                   // Send command, stop communication
-
-    encodeValuesReset();                                      // Reset encoder values
-
+    setMode(2);
+    encoderValuesReset();                                      // Reset encoder values
 }
 
 
@@ -78,7 +76,7 @@ void encoderValuesReset(){
 //Function to turn servo by 30 degrees and dispense M&M
 void dispense(){
     int npos = cpos + 30;                                     // Declare the target position
-    for (int pos = cpos; pos <= npos; pos +=1){
+    for (pos = cpos; pos <= npos; pos +=1){
         dropServo.write(pos);
         delay(15);
     }
@@ -88,7 +86,7 @@ void dispense(){
 // Function to reset servo to zero position
 void resetServo(){
     cpos = dropServo.read();                                      // Get current servo position
-    for (int pos = cpos; pos > 0; pos -=1){
+    for (pos = cpos; pos > 0; pos -=1){
         dropServo.write(pos);
         delay(15);
     }
@@ -102,7 +100,7 @@ float encoder1(){
     Wire.write(ENC1);                                         // Read the position of encoder 1
     Wire.endTransmission();
 
-    Wire.requestFrom(MD25, 4); 	                              // Request 4 bytes from MD25
+    Wire.requestFrom(MD25, 4);                                 // Request 4 bytes from MD25
     while(Wire.available() < 4);                              // Wait for 4 bytes to arrive
     long poss1 = Wire.read();                                 // First byte for encoder 1, HH.
     poss1 <<= 8;
@@ -111,8 +109,7 @@ float encoder1(){
     poss1 += Wire.read();                                     // Third byte for encoder 1, LH
     poss1 <<= 8;
     poss1 +=Wire.read();                                      // Final byte
-    poss1_mm = poss1*0.093;                                   // Convert to mm
-    return(poss1_mm);
+    return(poss1*0.093);                                      // Convert to cm
 }
 
 // Function to read and display value of encoder 2 as a float
@@ -121,7 +118,7 @@ float encoder2(){
     Wire.write(ENC2);                                         // Read the position of encoder 1
     Wire.endTransmission();
 
-    Wire.requestFrom(MD25, 4); 	                              // Request 4 bytes from MD25
+    Wire.requestFrom(MD25, 4);                                // Request 4 bytes from MD25
     while(Wire.available() < 4);                              // Wait for 4 bytes to arrive
     long poss1 = Wire.read();                                 // First byte for encoder 1, HH.
     poss1 <<= 8;
@@ -130,15 +127,20 @@ float encoder2(){
     poss1 += Wire.read();                                     // Third byte for encoder 1, LH
     poss1 <<= 8;
     poss1 +=Wire.read();                                      // Final byte
-    poss1_mm = poss1*0.093;                                   // Convert to mm
-    return(poss1_mm);
+    return(poss1*0.093);                                      // Convert to cm
 }
 
-// Function to light an LED when a step has been completed
-void ledNotify(){
-    digitalWrite(ledPin, HIGH);
-    delay(20);
+// Function to light an LED and sound a tone when a step has been completed
+void checkpointNotify(){
+    analogWrite(ledPin, 255);
+    tone(piezoPin, 3000);
+    delay(100);
+    tone(piezoPin, 4000);
+    delay(100);
+    noTone(10);
     digitalWrite(ledPin, LOW);
+    delay(100);
+    delay(5000);
 }
 
 // Function to move the robot forward by the amount x at speed speed
@@ -150,7 +152,28 @@ void moveForward(float x, int speed){
         Wire.endTransmission();
     }while(encoder1() < x);
     stopMotors();
+}
 
+//Function to turn robot on the spot
+void rotate(char direction, float degrees, int speed){
+    double w1Dist = degrees/360*robotWidth*pi;
+    if(direction == "ccw"){
+        do{
+            Wire.beginTransmission(MD25);
+            Wire.write(TURN);
+            Wire.write(speed);
+            Wire.endTransmission();
+        }while(encoder1()<w1Dist);
+    }
+    else if(direction == "cw"){
+        do{
+            Wire.beginTransmission(MD25);
+            Wire.write(TURN);
+            Wire.write(-speed);
+            Wire.endTransmission();
+        }while(encoder1()<w1Dist);
+    }
+    stopMotors();
 }
 
 // Function to stop motors
@@ -166,13 +189,30 @@ void stopMotors(){
     }while(d1 != d2);
 
 }
+
+// Function to change motor mode
+void setMode(int mode){
+    Wire.beginTransmission(MD25);                             // Begin communication with MD25
+    Wire.write(MODE);                                         // Write to mode switch
+    Wire.write(mode);                                         // Write mode
+    Wire.endTransmission();                                   // Send command, stop communication
+}
 /*
 ------------------------------------------------------------------------------------------------------------------------
  Arduino will run this after setup.
 ------------------------------------------------------------------------------------------------------------------------
 */
 void loop(){
-    moveForward(100, 200);
-    dispense();
-    ledNotify();
+    moveForward(340, 200);
+    checkpointNotify();
+
+    rotate("cw", 90, 50);
+    moveForward(260, 200);
+    checkpointNotify();
+
+    rotate("ccw", 90, 50);
+    moveForward(500, 200);
+    checkpointNotify();
+
+    while(1);
 }
