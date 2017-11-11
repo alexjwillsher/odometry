@@ -81,20 +81,29 @@ void dispense(){
     int npos = cpos + 30;                                     // Declare the target position
     for (pos = cpos; pos <= npos; pos +=1){
         dropServo.write(pos);
-        delay(15);
+        delay(30);
+    }
+    cpos = pos;                                               // Set current position to servo position
+}
+
+void penultimateDispense(){
+    int npos = cpos + 25;                                     // Declare the target position
+    for (pos = cpos; pos <= npos; pos +=1){
+        dropServo.write(pos);
+        delay(30);
     }
     cpos = pos;                                               // Set current position to servo position
 }
 
 // Function to reset servo to zero position
 void resetServo(){
-
-    cpos = dropServo.read();                                  // Get current servo position
-    for (pos = cpos; pos >= 0; pos -=1){
-        dropServo.write(pos);
-        delay(15);
-    }
-    cpos = pos;
+    dropServo.write(0);
+    //cpos = dropServo.read();                                  // Get current servo position
+    //for (pos = cpos; pos >= 0; pos -=1){
+    //    dropServo.write(pos);
+    //    delay(15);
+    //}
+    //cpos = pos;
 }
 
 
@@ -157,7 +166,7 @@ void moveForward(float x, int speed){
         Wire.write(SPEED);
         Wire.write(speed);
         Wire.endTransmission();
-    }while(encoder1() < x-6);
+    }while(encoder1() < x-3);
     stopMotors();
 }
 
@@ -169,8 +178,8 @@ void rotateRight(float degrees, int v){
         Wire.write(TURN);
         Wire.write(v);
         Wire.endTransmission();
-    }while(encoder1() < wDist-3.5);
-    stopMotors();
+    }while(encoder1() < wDist-3.5);    
+    stopMotors();   
 }
 
 // Function to turn robot on the spot
@@ -181,8 +190,8 @@ void rotateLeft(float degrees, int v){
         Wire.write(TURN);
         Wire.write(-v);
         Wire.endTransmission();
-    }while(encoder2() < wDist-3.5);
-    stopMotors();
+    }while(encoder2() < wDist-3.5);    
+    stopMotors();   
 }
 
 // Function to move robot in arc
@@ -208,7 +217,7 @@ void arc(float w1d, float w2d, int v){
 
 // Function to stop motors
 void stopMotors(){
-    setAccel(10);
+  setAccel(6);
     do{
         d1 = encoder2();
         delay(5);
@@ -246,62 +255,81 @@ void setAccel(int accel){
 ------------------------------------------------------------------------------------------------------------------------
 */
 void loop(){
-    moveForward(40, 200);
+  delay(2000);
+//13 to 12
+    moveForward(41, 160);
+    checkpointNotify();
+    
+//12 to 11
+    moveForward(38, 160);
     checkpointNotify();
 
-    moveForward(40, 180);
-    checkpointNotify();
-
-    rotateRight(142.6, 200);
-    arc(18.9, 150.8, 80);
+   
+    
+//11 turn to 10
+    rotateRight(138, 160);
+    arc(26.4, 155, 80);
     dispense();
     checkpointNotify();
+    
 
-    rotateLeft(90, 180);
-    moveForward(18, 200);
+    
+//10 turn to 9
+    rotateLeft(85, 180);
+    moveForward(13, 200);
     checkpointNotify();
-
-    rotateRight(130, 180);
-    moveForward(62, 200);
+    
+//9 turn to 8
+    rotateRight(144, 180);
+    moveForward(56, 200);
     dispense();
     checkpointNotify();
-
-    rotateRight(40, 180);
-    moveForward(40, 200);
-    checkpointNotify();
-
-    rotateRight(90, 180);
-    moveForward(40, 200);
-    dispense();
-    checkpointNotify();
-
-    rotateRight(90, 180);
-    moveForward(40, 200);
-    checkpointNotify();
-
-    rotateRight(90, 180);
-    moveForward(66, 200);
-    dispense();
-    checkpointNotify();
-
-    rotateLeft(90, 180);
-    arc(18.8, 62.8, 80);
-    checkpointNotify();
-
-    rotateRight(90, 180);
-    moveForward(50, 200);
-    dispense();
-    checkpointNotify();
-
-    rotateRight(90, 180);
-    moveForward(26, 200);
-    checkpointNotify();
-
-    rotateLeft(90, 180);
+    
+    
+//8 turn to 7
+    rotateRight(43, 180);
     moveForward(34, 200);
     checkpointNotify();
+    
+//7 turn to 6
+    rotateRight(88, 180);
+    moveForward(35, 200);
+    dispense();
+    checkpointNotify();
+    
+//6 turn to 5
+    rotateRight(90, 180);
+    moveForward(34, 200);
+    checkpointNotify();
+  
+//5 turn to 4
+    rotateRight(85, 180);
+    moveForward(60, 200);
+    penultimateDispense();
+    checkpointNotify();
+
+//4 arc turn to 3
+    rotateLeft(90, 180);
+    arc(17.8, 60.8, 80);
+    checkpointNotify();
+    
+//3 turn to 2
+    rotateRight(88, 180);
+    moveForward(43, 180);
+    dispense();
+    checkpointNotify();
+
+    
+//2 turn to 1
+    rotateRight(90, 180);
+    moveForward(20, 200);
+    checkpointNotify();
+//1 turn to 13
+    rotateLeft(90, 180);
+    moveForward(29, 200);
+    checkpointNotify();
+    
 
     resetServo();
     delay(99999);
-
 }
